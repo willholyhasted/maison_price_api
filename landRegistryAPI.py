@@ -10,10 +10,10 @@ API_URL = "https://landregistry.data.gov.uk/data/ppi/transaction-record.json"
 
 "https://landregistry.data.gov.uk/data/ppi/transaction-record.html?_page=0&_pageSize=50&transactionId=&newBuild=&transactionDate=&min-transactionDate=0022-02-01&max-transactionDate=2024-12-02&pricePaid=&min-pricePaid=&max-pricePaid=&type.label=&estateType.prefLabel=&hasTransaction=&propertyAddress.county=&propertyAddress.district=&propertyAddress.locality=&propertyAddress.paon=&propertyAddress.postcode=SW4+0ES&propertyAddress.saon=&propertyAddress.street=&propertyAddress.town=&propertyAddress.type.=&propertyType.prefLabel=&recordStatus.prefLabel=&transactionCategory.prefLabel="
 
-#API call returns a dictionary, where we care about the key "result"
-#This is in turn another dictionary, where we care about "items"
-#items is itself a list of property transactions.
-#Each transaction is a dictionary with the following keys
+# API call returns a dictionary, where we care about the key "result"
+# This is in turn another dictionary, where we care about "items"
+# items is itself a list of property transactions.
+# Each transaction is a dictionary with the following keys
 """
 _about
 estateType
@@ -28,22 +28,13 @@ transactionDate
 transactionId
 type
 """
-#There appear to be 10 observations as the maximum number of observations per request
+# There appear to be 10 observations as the maximum number of observations per request
 
-def load_data():
+
+def load_data(postcode):
     transactions = []
     print("Loading data......")
     for i in range(0, 100):
-        print(f"Calling from page {i}")
-        # params = {
-        #     "_page" : f"{i}",
-        #     "min-transactionDate" : "2000-12-01",
-        #     "max-transactionDate" : "2024-12-31",
-        #     "propertyAddress.postcode" : "SW1A 1AA",
-        #     "propertyAddress.town": "LONDON",
-        #     "_pageSize": "200"
-        # }
-
         params = {
             "_page": i,
             "_pageSize": 200,
@@ -62,14 +53,14 @@ def load_data():
             "propertyAddress.district": "",
             "propertyAddress.locality": "",
             "propertyAddress.paon": "",
-            "propertyAddress.postcode": "SW4 0ES",
+            "propertyAddress.postcode": postcode,
             "propertyAddress.saon": "",
             "propertyAddress.street": "",
             "propertyAddress.town": "",
             "propertyAddress.type.": "",
             "propertyType.prefLabel": "",
             "recordStatus.prefLabel": "",
-            "transactionCategory.prefLabel": ""
+            "transactionCategory.prefLabel": "",
         }
 
         response = requests.get(API_URL, params=params)
@@ -77,71 +68,73 @@ def load_data():
 
         if response.status_code != 200:
             break
-        items = response.json().get('result').get('items')
+        items = response.json().get("result").get("items")
         if len(items) == 0:
             break
         transactions.extend(items)
 
-    #data = pd.DataFrame(transactions)
+    # data = pd.DataFrame(transactions)
     return transactions
 
+
 def parse_data(list):
-        # Create lists to store the transaction details
-        transactions = []
+    # Create lists to store the transaction details
+    transactions = []
 
-        # Extract all information from each transaction
-        for item in list:
-            transaction = {
-                # Transaction details
-                'transaction_id': item['transactionId'],
-                'transaction_date': item['transactionDate'],
-                'price_paid': item['pricePaid'],
-                'new_build': item['newBuild'],
+    # Extract all information from each transaction
+    for item in list:
+        transaction = {
+            # Transaction details
+            "transaction_id": item["transactionId"],
+            "transaction_date": item["transactionDate"],
+            "price_paid": item["pricePaid"],
+            "new_build": item["newBuild"],
+            # Property type and estate type
+            "property_type": item["propertyType"]["label"][0]["_value"],
+            "estate_type": item["estateType"]["label"][0]["_value"],
+            # Address components
+            "paon": item["propertyAddress"]["paon"],
+            "saon": item["propertyAddress"].get("saon", ""),  # Optional field
+            "street": item["propertyAddress"]["street"],
+            "locality": item["propertyAddress"].get("locality", ""),  # Optional field
+            "town": item["propertyAddress"]["town"],
+            "district": item["propertyAddress"]["district"],
+            "county": item["propertyAddress"]["county"],
+            "postcode": item["propertyAddress"]["postcode"],
+            # Record status and transaction category
+            "record_status": item["recordStatus"]["label"][0]["_value"],
+            "transaction_category": item["transactionCategory"]["label"][0]["_value"],
+            # Full address (combined)
+            "address": f"{item['propertyAddress'].get('saon', '')} {item['propertyAddress']['paon']} {item['propertyAddress']['street']}".replace(
+                ".", ""
+            )
+            .replace(",", "")
+            .replace(" ", "")
+            .lower()
+            .strip(),
+            # Reference URLs
+            #'transaction_ref': item['hasTransaction'],
+            #'about_ref': item['_about']
+        }
+        transactions.append(transaction)
 
-                # Property type and estate type
-                'property_type': item['propertyType']['label'][0]['_value'],
-                'estate_type': item['estateType']['label'][0]['_value'],
+    # Create DataFrame
+    df = pd.DataFrame(transactions)
+    df["transaction_date"] = pd.to_datetime(
+        df["transaction_date"], format="%a, %d %b %Y"
+    )
+    df["transaction_date"] = df["transaction_date"].dt.strftime("%Y%m%d")
 
-                # Address components
-                'paon': item['propertyAddress']['paon'],
-                'saon': item['propertyAddress'].get('saon', ''),  # Optional field
-                'street': item['propertyAddress']['street'],
-                'locality': item['propertyAddress'].get('locality', ''),  # Optional field
-                'town': item['propertyAddress']['town'],
-                'district': item['propertyAddress']['district'],
-                'county': item['propertyAddress']['county'],
-                'postcode': item['propertyAddress']['postcode'],
+    # Count total transactions
+    total_transactions = len(transactions)
 
-                # Record status and transaction category
-                'record_status': item['recordStatus']['label'][0]['_value'],
-                'transaction_category': item['transactionCategory']['label'][0]['_value'],
-
-                # Full address (combined)
-                'full_address': f"{item['propertyAddress'].get('saon', '')} {item['propertyAddress']['paon']} {item['propertyAddress']['street']}".strip(),
-
-                # Reference URLs
-                #'transaction_ref': item['hasTransaction'],
-                #'about_ref': item['_about']
-            }
-            transactions.append(transaction)
-
-        # Create DataFrame
-        df = pd.DataFrame(transactions)
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'], format='%a, %d %b %Y')
-        df['transaction_date'] = df['transaction_date'].dt.strftime('%Y%m%d')
-
-        # Count total transactions
-        total_transactions = len(transactions)
-
-        return df, total_transactions
+    return df, total_transactions
 
 
 if __name__ == "__main__":
-    data = load_data()
+    data = load_data("SW4 0ES")
     df, n = parse_data(data)
     print(n)
     print(np.shape(df))
     print(df.head())
-    df.to_csv('transactions.csv', index=False)
-
-
+    df.to_csv("transactions.csv", index=False)
