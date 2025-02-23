@@ -85,45 +85,56 @@ def parse_data(list):
     for item in list:
         transaction = {
             # Transaction details
-            "transaction_id": item["transactionId"],
-            "transaction_date": item["transactionDate"],
-            "price_paid": item["pricePaid"],
-            "new_build": item["newBuild"],
+            "transaction_id": item.get("transactionId", None),
+            "transaction_date": item.get("transactionDate", None),
+            "price_paid": item.get("pricePaid", None),
+            "new_build": item.get("newBuild", None),
             # Property type and estate type
-            "property_type": item["propertyType"]["label"][0]["_value"],
-            "estate_type": item["estateType"]["label"][0]["_value"],
+            "property_type": item.get("propertyType", {})
+            .get("label", [{}])[0]
+            .get("_value", None),
+            "estate_type": item.get("estateType", {})
+            .get("label", [{}])[0]
+            .get("_value", None),
             # Address components
-            "paon": item["propertyAddress"]["paon"],
-            "saon": item["propertyAddress"].get("saon", ""),  # Optional field
-            "street": item["propertyAddress"]["street"],
-            "locality": item["propertyAddress"].get("locality", ""),  # Optional field
-            "town": item["propertyAddress"]["town"],
-            "district": item["propertyAddress"]["district"],
-            "county": item["propertyAddress"]["county"],
-            "postcode": item["propertyAddress"]["postcode"],
+            "paon": item.get("propertyAddress", {}).get("paon", None),
+            "saon": item.get("propertyAddress", {}).get("saon", ""),
+            "street": item.get("propertyAddress", {}).get("street", None),
+            "locality": item.get("propertyAddress", {}).get("locality", ""),
+            "town": item.get("propertyAddress", {}).get("town", None),
+            "district": item.get("propertyAddress", {}).get("district", None),
+            "county": item.get("propertyAddress", {}).get("county", None),
+            "postcode": item.get("propertyAddress", {}).get("postcode", None),
             # Record status and transaction category
-            "record_status": item["recordStatus"]["label"][0]["_value"],
-            "transaction_category": item["transactionCategory"]["label"][0]["_value"],
-            # Full address (combined)
-            "address": f"{item['propertyAddress'].get('saon', '')} {item['propertyAddress']['paon']} {item['propertyAddress']['street']}".replace(
+            "record_status": item.get("recordStatus", {})
+            .get("label", [{}])[0]
+            .get("_value", None),
+            "transaction_category": item.get("transactionCategory", {})
+            .get("label", [{}])[0]
+            .get("_value", None),
+        }
+
+        transaction["address"] = (
+            f"{transaction.get('saon', '')} {transaction['paon']} {transaction['street']}".replace(
                 ".", ""
             )
             .replace(",", "")
             .replace(" ", "")
             .lower()
-            .strip(),
-            # Reference URLs
-            #'transaction_ref': item['hasTransaction'],
-            #'about_ref': item['_about']
-        }
+            .strip()
+        )
+
         transactions.append(transaction)
 
     # Create DataFrame
     df = pd.DataFrame(transactions)
-    df["transaction_date"] = pd.to_datetime(
-        df["transaction_date"], format="%a, %d %b %Y"
-    )
-    df["transaction_date"] = df["transaction_date"].dt.strftime("%Y%m%d")
+
+    # Convert dates only for non-null values
+    if "transaction_date" in df.columns:
+        mask = df["transaction_date"].notna()
+        df.loc[mask, "transaction_date"] = pd.to_datetime(
+            df.loc[mask, "transaction_date"], format="%a, %d %b %Y"
+        ).dt.strftime("%Y%m%d")
 
     # Count total transactions
     total_transactions = len(transactions)
@@ -132,7 +143,7 @@ def parse_data(list):
 
 
 if __name__ == "__main__":
-    data = load_data("SW4 0ES")
+    data = load_data("N16")
     df, n = parse_data(data)
     print(n)
     print(np.shape(df))

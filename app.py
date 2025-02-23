@@ -22,6 +22,10 @@ def get_properties():
     # Query Land Registry API
     land_registry_data = load_data(postcode)
     land_registry_df, total_transactions = parse_data(land_registry_data)
+    print("Land Registry Addresses:")
+    print(land_registry_df["address"])
+    print("EPC Addresses:")
+    print(epc_df["address"])
 
     # Merge the DataFrames on the address column using an inner join
     merged_df = pd.merge(
