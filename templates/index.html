@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Property Price API Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .endpoint {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Property Price API Documentation</h1>
+    
+    <h2>Overview</h2>
+    <p>This API allows one to calculate the mean price per metre squared per year for properties within a given postcode in the UK.
+
+        The geographical area of search can be toggled with the 'n' parameter. The larger the value of 'n', the more characters after the blank space in the postcode are used in the search.
+        For instance, a value of 2 will search within a 2 character radius of the postcode, a value of 3 will search within a 3 character radius. 
+
+        See examples below for further clarification.
+    
+        </p>
+
+    <h2>Endpoints</h2>
+    
+    <div class="endpoint">
+        <h3>Get Property Prices for a given postcode</h3>
+        <p><strong>Endpoint:</strong> <code>/properties</code></p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>postcode</code> (required): UK postcode to search for</li>
+            <li><code>n</code> (optional): Number characters after the blank space in the postcode to use in seach area (default is 3)</li>
+        </ul>
+        <p><strong>Example:</strong></p>
+        <code>GET /properties?postcode=SW6+0NR&n=2</code>
+        
+        <p><strong>Response:</strong> Returns a JSON object containing:</p>
+        <ul>
+            <li>Mean price per metre squared per year for properties within the postcode "SW6 0N"</li>
+        </ul>
+
+        <p><strong>Example:</strong></p>
+        <code>GET /properties?postcode=SW6+0NR&n=1</code>
+        
+        <p><strong>Response:</strong> Returns a JSON object containing:</p>
+        <ul>
+            <li>Mean price per metre squared per year for properties within the postcode "SW6 0"</li>
+        </ul>
+
+        <p><strong>Example:</strong></p>
+        <code>GET /properties?postcode=SW6+0NR</code>
+        
+        <p><strong>Response:</strong> Returns a JSON object containing:</p>
+        <ul>
+            <li>Mean price per metre squared per year for properties within the postcode "SW6 0NR"</li>
+        </ul>
+    </div>
+
+    <h2>Data Sources</h2>
+    <ul>
+         The service makes two API calls:
+         
+         <li>EPC (Energy Performance Certificate) from the Department for Levelling Up Housing and Communities: This collects floor area per house information</li>
+         <li>Land Registry Price Paid Data from GOV.UK: Provides historical property transaction data</li>
+
+        EPC: <a href="https://epc.opendatacommunities.org.uk/docs/api/overview">https://epc.opendatacommunities.org.uk/docs/api/overview</a>
+        Land Registry: <a href="https://www.gov.uk/government/collections/price-paid-data">https://www.gov.uk/government/collections/price-paid-data</a>
+
+    </ul>
+
+    <h2>Notes</h2>
+    <ul>
+        <li>The API matches properties between both databases using address matching. This is imperfect and 25% of observations are dropped in the process.</li>
+        <li>In the case of multiple EPC certificates for the same property, the most recent EPC certificate is used </li>
+        <li>Transaction dates range from 1995 to present</li>
+        <li>The last update to the Land Registry data was 2024-12-31</li>
+    </ul>
+</body>
+</html>

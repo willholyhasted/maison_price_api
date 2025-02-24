@@ -6,9 +6,6 @@ from base64 import b64encode
 from dotenv import load_dotenv
 from src.postcodes import find_postcodes
 import pandas as pd
-import numpy as np
-import json
-import pandas as pd
 import os
 
 load_dotenv()
@@ -71,16 +68,13 @@ def query_epc_api(postcode, n=2):
 
         # Get column names from the first successful response
         for postcode in postcodes_list:
-            try:
-                test_response = requests.get(
-                    base_url,
-                    headers=headers,
-                    params={"postcode": postcode.replace(" ", "").upper(), "size": 1},
-                )
-                column_names = test_response.json()["column-names"]
-                break
-            except:
-                continue
+            test_response = requests.get(
+                base_url,
+                headers=headers,
+                params={"postcode": postcode.replace(" ", "").upper(), "size": 1},
+            )
+            column_names = test_response.json()["column-names"]
+            break
 
         # Create the final DataFrame
         df = pd.DataFrame(all_data, columns=column_names)
@@ -113,7 +107,7 @@ def query_epc_api(postcode, n=2):
 def main():
     # Example usage
     postcode = "SW4 0ES"  # Example postcode
-    results = query_epc_api(postcode, 2)
+    # results = query_epc_api(postcode, 2)
     # results.to_csv("epc_data.csv", index=False)
 
 

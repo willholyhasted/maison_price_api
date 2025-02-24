@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from src.epcAPI import query_epc_api
 from src.landRegistryAPI import load_data, parse_data
 import pandas as pd
@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "Hello, welcome to the EPC and Land Registry API!"
+    return render_template("index.html")
 
 
 @app.route("/properties", methods=["GET"])

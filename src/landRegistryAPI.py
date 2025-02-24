@@ -1,7 +1,6 @@
 import requests
 import pandas as pd
 import numpy as np
-import json
 from src.postcodes import find_postcodes
 
 API_URL = "https://landregistry.data.gov.uk/data/ppi/transaction-record.json"
