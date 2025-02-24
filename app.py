@@ -1,31 +1,42 @@
 from flask import Flask, request, jsonify
-from epcAPI import query_epc_api
-from landRegistryAPI import load_data, parse_data
+from src.epcAPI import query_epc_api
+from src.landRegistryAPI import load_data, parse_data
 import pandas as pd
 from fuzzywuzzy import process
+import numpy as np
 
 app = Flask(__name__)
+
+
+@app.route("/")
+def index():
+    return "Hello, welcome to the EPC and Land Registry API!"
 
 
 @app.route("/properties", methods=["GET"])
 def get_properties():
     postcode = request.args.get("postcode")
+    n = int(request.args.get("n"))
+    if n is None:
+        n = 3
     if not postcode:
         return jsonify({"error": "Postcode is required"}), 400
 
     # Query EPC API
     try:
-        epc_df = query_epc_api(postcode)
+        epc_df = query_epc_api(postcode, n)
     except Exception as e:
         return jsonify({"Error querying EPC API": str(e)}), 500
 
     # Query Land Registry API
-    land_registry_data = load_data(postcode)
+    land_registry_data = load_data(postcode, n)
     land_registry_df, total_transactions = parse_data(land_registry_data)
-    print("Land Registry Addresses:")
-    print(land_registry_df["address"])
-    print("EPC Addresses:")
-    print(epc_df["address"])
+    print(
+        "Land Registry Addresses: have length ", np.shape(land_registry_df["address"])
+    )
+    # print(land_registry_df["address"])
+    print("EPC Addresses: have length ", np.shape(epc_df["address"]))
+    # print(epc_df["address"])
 
     # Merge the DataFrames on the address column using an inner join
     merged_df = pd.merge(
@@ -36,6 +47,7 @@ def get_properties():
         suffixes=("_epc", "_land_registry"),
     )
 
+    print("Merged DataFrame has length ", np.shape(merged_df["address"]))
     price_per_floor_area_per_year = calculate_price_per_floor_area(merged_df)
 
     # Combine results
@@ -46,10 +58,10 @@ def get_properties():
         ),
     }
 
-    merged_df.to_csv("results.csv", index=False)
-    price_per_floor_area_per_year.to_csv(
-        "price_per_floor_area_per_year.csv", index=False
-    )  # Save to CSV if needed
+    # merged_df.to_csv("results.csv", index=False)
+    # price_per_floor_area_per_year.to_csv(
+    #    "price_per_floor_area_per_year.csv", index=False
+    # )  # Save to CSV if needed
     return jsonify(combined_results)
 
 
@@ -90,4 +102,4 @@ def fuzzy_merge(df1, df2, key1, key2, threshold=80):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5051)
+    app.run(debug=True, host="0.0.0.0", port=5055)
