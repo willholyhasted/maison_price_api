@@ -106,7 +106,8 @@ def query_epc_api(postcode, n=2):
 
 def main():
     # Example usage
-    postcode = "SW4 0ES"  # Example postcode
+    print("Test")
+    # postcode = "SW4 0ES"  # Example postcode
     # results = query_epc_api(postcode, 2)
     # results.to_csv("epc_data.csv", index=False)
 
