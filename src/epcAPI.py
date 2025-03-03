@@ -4,7 +4,7 @@
 import requests
 from base64 import b64encode
 from dotenv import load_dotenv
-from src.postcodes import find_postcodes
+from src.postcodes import split_string
 import pandas as pd
 import os
 
@@ -43,15 +43,24 @@ def query_epc_api(postcode, n=2):
 
     headers = {"Accept": "application/json", "Authorization": create_auth_header()}
     all_data = []
-    postcodes_list = find_postcodes(postcode, n)
-    for postcode in postcodes_list:
+    i = 0
+    postcode = split_string(postcode, n)
+    search_after = None
+    search = True
+    while search:
         postcode = postcode.replace(" ", "").upper()
         params = {"postcode": postcode, "size": 5000}
+        if i > 0:
+            params["search-after"] = search_after
 
         try:
             response = requests.get(base_url, headers=headers, params=params)
             response.raise_for_status()
             # print(f"Generated URL: {response.url}")
+            search_after = response.headers.get("X-Next-Search-After")
+
+            if search_after is None:
+                search = False
 
             # Get the data from the response
             rows = response.json().get("rows", [])
@@ -61,33 +70,29 @@ def query_epc_api(postcode, n=2):
 
             print(f"Collected {len(rows)} records for postcode {postcode}")
             print(f"Total records collected so far: {len(all_data)}")
+            i = i + 1
 
         except requests.exceptions.RequestException as e:
+            search = False
             print(f"Error processing postcode {postcode}: {e}")
-            continue  # Skip to the next postcode if there's an error
 
-        # Get column names from the first successful response
-        for postcode in postcodes_list:
-            test_response = requests.get(
-                base_url,
-                headers=headers,
-                params={"postcode": postcode.replace(" ", "").upper(), "size": 1},
-            )
-            column_names = test_response.json()["column-names"]
-            break
+    test_response = requests.get(
+        base_url,
+        headers=headers,
+        params={"postcode": postcode.replace(" ", "").upper(), "size": 1},
+    )
+    column_names = test_response.json()["column-names"]
 
-        # Create the final DataFrame
-        df = pd.DataFrame(all_data, columns=column_names)
-        print(
-            f"Final DataFrame created with {len(df)} rows and {len(df.columns)} columns"
-        )
+    # Create the final DataFrame
+    df = pd.DataFrame(all_data, columns=column_names)
+    print(f"Final DataFrame created with {len(df)} rows and {len(df.columns)} columns")
 
     # Convert lodgement-date to datetime for comparison
     df["lodgement-date"] = pd.to_datetime(df["lodgement-date"])
 
     # Sort by lodgement date (newest first) and keep first occurrence of each building reference
     df = df.sort_values("lodgement-date", ascending=False)
-    df = df.drop_duplicates(subset="building-reference-number", keep="first")
+    # df = df.drop_duplicates(subset="building-reference-number", keep="first")
     df["lodgement-date"] = df["lodgement-date"].dropna()
     df["total-floor-area"] = df["total-floor-area"].dropna()
 
@@ -107,9 +112,9 @@ def query_epc_api(postcode, n=2):
 def main():
     # Example usage
     print("Test")
-    # postcode = "SW4 0ES"  # Example postcode
-    # results = query_epc_api(postcode, 2)
-    # results.to_csv("epc_data.csv", index=False)
+    postcode = "SW4"  # Example postcode
+    results = query_epc_api(postcode, 1)
+    results.to_csv("epc_data.csv", index=False)
 
 
 if __name__ == "__main__":

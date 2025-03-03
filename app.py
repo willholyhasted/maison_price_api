@@ -13,14 +13,19 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/properties", methods=["GET"])
-def get_properties():
+@app.route("/price/timeseries", methods=["GET"])
+def get_price_timeseries():
+
+    # Get the postcode and the n parameter from the request
     postcode = request.args.get("postcode")
-    n = int(request.args.get("n"))
-    if n is None:
-        n = 3
     if not postcode:
         return jsonify({"error": "Postcode is required"}), 400
+
+    n = request.args.get("n")
+    if n is None:
+        n = 3
+    else:
+        n = int(n)
 
     # Query EPC API
     try:
@@ -48,6 +53,7 @@ def get_properties():
     )
 
     print("Merged DataFrame has length ", np.shape(merged_df["address"]))
+
     price_per_floor_area_per_year = calculate_price_per_floor_area(merged_df)
 
     # Combine results
@@ -82,14 +88,31 @@ def calculate_price_per_floor_area(merged_df):
     ).dt.year
 
     # Group by year and calculate average price per floor area
-    price_per_floor_area_per_year = (
-        merged_df.groupby("year")["price_per_floor_area"].mean().reset_index()
+    price__m2_yearly = (
+        merged_df.groupby("year")["price_per_floor_area"]
+        .agg(["median", "mean", "count", "std"])
+        .reset_index()
     )
 
-    # Rename columns for clarity
-    price_per_floor_area_per_year.columns = ["year", "price_per_floor_area"]
+    price__m2_yearly["upper_bound"] = price__m2_yearly["mean"] + price__m2_yearly["std"]
+    price__m2_yearly["lower_bound"] = price__m2_yearly["mean"] - price__m2_yearly["std"]
 
-    return price_per_floor_area_per_year
+    # Rename columns for clarity
+    price__m2_yearly.columns = [
+        "year",
+        "median",
+        "mean",
+        "count",
+        "std",
+        "upper_bound",
+        "lower_bound",
+    ]
+
+    for col in price__m2_yearly.columns:
+        if col != "year":
+            price__m2_yearly[col] = round(price__m2_yearly[col], 2)
+
+    return price__m2_yearly
 
 
 def fuzzy_merge(df1, df2, key1, key2, threshold=80):
