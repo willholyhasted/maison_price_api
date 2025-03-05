@@ -13,7 +13,7 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/price/timeseries", methods=["GET"])
+@app.route("/properties", methods=["GET"])
 def get_price_timeseries():
 
     # Get the postcode and the n parameter from the request
