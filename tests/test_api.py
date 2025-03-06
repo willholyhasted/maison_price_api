@@ -2,9 +2,7 @@ import unittest
 import json
 from app import app
 import pandas as pd
-from unittest.mock import patch
-from src.epcAPI import query_epc_api
-from src.landRegistryAPI import load_data, parse_data
+from unittest.mock import patch, MagicMock
 
 
 class TestAPI(unittest.TestCase):
@@ -12,9 +10,9 @@ class TestAPI(unittest.TestCase):
         self.app = app.test_client()
         self.app.testing = True
 
-    @patch("epcAPI.query_epc_api")
-    @patch("landRegistryAPI.load_data")
-    @patch("landRegistryAPI.parse_data")
+    @patch("src.epcAPI.query_epc_api")
+    @patch("src.landRegistryAPI.load_data")
+    @patch("src.landRegistryAPI.parse_data")
     def test_get_price_timeseries(
         self, mock_parse_data, mock_load_data, mock_query_epc_api
     ):
@@ -22,7 +20,7 @@ class TestAPI(unittest.TestCase):
         epc_df = pd.DataFrame(
             {
                 "address": ["123 test street", "456 test avenue"],
-                "total-floor-area": [100, 150],
+                "TOTAL_FLOOR_AREA": [100, 150],
             }
         )
         mock_query_epc_api.return_value = epc_df
@@ -41,7 +39,7 @@ class TestAPI(unittest.TestCase):
         mock_parse_data.return_value = (land_registry_df, 2)
 
         # Test the API endpoint
-        response = self.app.get("/properties?postcode=SW4+0ES")
+        response = self.app.get("/properties?postcode=SW1A1AA")
         data = json.loads(response.data)
 
         # Check if the response is successful

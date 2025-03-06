@@ -42,4 +42,6 @@ jobs:
       - name: Install test dependencies
         run: pip install pytest pytest-cov
       - name: Run tests
-        run: pytest tests/ --cov=. --cov-report=xml
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          pytest tests/ --cov=. --cov-report=xml
