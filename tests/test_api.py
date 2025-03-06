@@ -39,7 +39,7 @@ class TestAPI(unittest.TestCase):
         mock_parse_data.return_value = (land_registry_df, 2)
 
         # Test the API endpoint
-        response = self.app.get("/properties?postcode=SW1A1AA")
+        response = self.app.get("/properties?postcode=SW1A+1AA")
         data = json.loads(response.data)
 
         # Check if the response is successful
