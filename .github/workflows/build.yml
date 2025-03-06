@@ -26,3 +26,20 @@ jobs:
         run: black . --check
       - name: Check style and errors
         run: flake8 . --extend-ignore=E203,E501,W291
+        
+  python-tests:
+     needs: python-formatting
+     runs-on: ubuntu-latest
+     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov
+      - name: Run tests
+        run: pytest tests/ --cov=. --cov-report=xml
