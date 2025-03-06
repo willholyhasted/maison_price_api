@@ -3,8 +3,8 @@ import json
 from app import app
 import pandas as pd
 from unittest.mock import patch
-from epcAPI import query_epc_api
-from landRegistryAPI import load_data, parse_data
+from src.epcAPI import query_epc_api
+from src.landRegistryAPI import load_data, parse_data
 
 
 class TestAPI(unittest.TestCase):
