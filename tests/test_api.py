@@ -1,8 +1,8 @@
 import unittest
 import json
-from app import app
+from app import app, calculate_price_per_floor_area
 import pandas as pd
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 class TestAPI(unittest.TestCase):
@@ -10,9 +10,9 @@ class TestAPI(unittest.TestCase):
         self.app = app.test_client()
         self.app.testing = True
 
-    @patch("src.epcAPI.query_epc_api")
-    @patch("src.landRegistryAPI.load_data")
-    @patch("src.landRegistryAPI.parse_data")
+    @patch("app.query_epc_api")
+    @patch("app.load_data")
+    @patch("app.parse_data")
     def test_get_price_timeseries(
         self, mock_parse_data, mock_load_data, mock_query_epc_api
     ):
@@ -39,7 +39,7 @@ class TestAPI(unittest.TestCase):
         mock_parse_data.return_value = (land_registry_df, 2)
 
         # Test the API endpoint
-        response = self.app.get("/properties?postcode=SW1A1AA")
+        response = self.app.get("/properties?postcode=SW4+0ES")
         data = json.loads(response.data)
 
         # Check if the response is successful
