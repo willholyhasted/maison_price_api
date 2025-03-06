@@ -20,7 +20,7 @@ class TestAPI(unittest.TestCase):
         epc_df = pd.DataFrame(
             {
                 "address": ["123 test street", "456 test avenue"],
-                "TOTAL_FLOOR_AREA": [100, 150],
+                "total-floor-area": [100, 150],
             }
         )
         mock_query_epc_api.return_value = epc_df
