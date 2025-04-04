@@ -13,6 +13,11 @@ def index():
     return render_template("index.html")
 
 
+"""
+This function will return a time series of the yearly median, mean, std dev, upper and lower bouund of the price per m2 in a given neighbourhood
+"""
+
+
 @app.route("/properties", methods=["GET"])
 def get_price_timeseries():
 
@@ -27,21 +32,22 @@ def get_price_timeseries():
     else:
         n = int(n)
 
-    # Query EPC API
+    # Query EPC API and save as dataframe
     try:
         epc_df = query_epc_api(postcode, n)
     except Exception as e:
         return jsonify({"Error querying EPC API": str(e)}), 500
 
-    # Query Land Registry API
+    # Query Land Registry API and save as dataframe
     land_registry_data = load_data(postcode, n)
     land_registry_df, total_transactions = parse_data(land_registry_data)
+
+    """
     print(
         "Land Registry Addresses: have length ", np.shape(land_registry_df["address"])
     )
-    # print(land_registry_df["address"])
     print("EPC Addresses: have length ", np.shape(epc_df["address"]))
-    # print(epc_df["address"])
+    """
 
     # Merge the DataFrames on the address column using an inner join
     merged_df = pd.merge(
@@ -52,7 +58,7 @@ def get_price_timeseries():
         suffixes=("_epc", "_land_registry"),
     )
 
-    print("Merged DataFrame has length ", np.shape(merged_df["address"]))
+    # print("Merged DataFrame has length ", np.shape(merged_df["address"]))
 
     price_per_floor_area_per_year = calculate_price_per_floor_area(merged_df)
 
@@ -69,6 +75,12 @@ def get_price_timeseries():
     #    "price_per_floor_area_per_year.csv", index=False
     # )  # Save to CSV if needed
     return jsonify(combined_results)
+
+
+"""
+This function calculates the price per m2 for each transaction in the merged dataframe.
+It then groups by year to calculate the median, mean, std dev, upper and lower bounds of the price per m2 in a given neighbourhood.
+"""
 
 
 def calculate_price_per_floor_area(merged_df):
